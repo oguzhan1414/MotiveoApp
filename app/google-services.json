@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "72395866244",
+    "project_id": "motiveoapp",
+    "storage_bucket": "motiveoapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72395866244:android:11d43aa999581f28ab42d1",
+        "android_client_info": {
+          "package_name": "eu.tutorials.motiveoapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJaqR8jXgMvA_nwn5V4G2oyCiaR5UWiYg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
