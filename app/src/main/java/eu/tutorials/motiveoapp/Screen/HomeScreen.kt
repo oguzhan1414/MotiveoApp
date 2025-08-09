@@ -1,5 +1,7 @@
 package eu.tutorials.motiveoapp.Screen
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -21,41 +23,56 @@ import eu.tutorials.motiveoapp.pages.HomePage
 import eu.tutorials.motiveoapp.pages.ProfilePage
 import eu.tutorials.motiveoapp.pages.ProgressPage
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier, navController: NavController) {
-    var selectedIndex by remember { mutableStateOf(0) } // var olarak ve by kullanarak değiştirildi
+    var selectedIndex by remember { mutableStateOf(0) }
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = Color.White.copy(alpha = 0.95f)
-            ) {
+            NavigationBar(containerColor = Color.White.copy(alpha = 0.95f)) {
                 navigationItems.forEachIndexed { index, navigationItem ->
                     NavigationBarItem(
                         selected = index == selectedIndex,
                         onClick = { selectedIndex = index },
-                        icon = { Icon(imageVector = navigationItem.icon,
-                            contentDescription = navigationItem.title,
-                            tint = if(index == selectedIndex) Color(0xFF2196F3) else Color.Gray) },
-                        label = { Text(text = navigationItem.title,
-                            color = if(index==selectedIndex) Color(0xFF2196F3) else Color.Gray) }
+                        icon = {
+                            Icon(
+                                imageVector = navigationItem.icon,
+                                contentDescription = navigationItem.title,
+                                tint = if (index == selectedIndex) Color(0xFF2196F3) else Color.Gray
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = navigationItem.title,
+                                color = if (index == selectedIndex) Color(0xFF2196F3) else Color.Gray
+                            )
+                        }
                     )
                 }
             }
         }
     ) { paddingValues ->
-        ContentScreen(modifier = modifier.padding(paddingValues),selectedIndex)
+        ContentScreen(
+            modifier = modifier.padding(paddingValues),
+            selectedIndex = selectedIndex,
+            navController = navController   // burada navController geçiriyoruz
+        )
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun ContentScreen(modifier: Modifier = Modifier,selectedIndex : Int) {
-    when(selectedIndex){
-        0-> HomePage(modifier)
-        1-> GoalsPage(modifier)
-        2-> AddPage(modifier)
-        3-> ProgressPage(modifier)
-        4-> ProfilePage(modifier)
+fun ContentScreen(
+    modifier: Modifier = Modifier,
+    selectedIndex: Int,
+    navController: NavController    // navController parametresi eklendi
+) {
+    when (selectedIndex) {
+        0 -> HomePage(modifier)
+        1 -> GoalsPage(modifier)
+        2 -> AddPage(modifier)
+        3 -> ProgressPage(modifier)
+        4 -> ProfilePage(modifier, navController)  // navController burada verildi
     }
-
 }

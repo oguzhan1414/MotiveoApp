@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -44,18 +45,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import eu.tutorials.motiveoapp.AppUtil
+import eu.tutorials.motiveoapp.viewmodel.AuthViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignUpScreen(modifier: Modifier = Modifier,navController: NavController) {
+fun SignUpScreen(modifier: Modifier = Modifier,navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var selectedGoal by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var context = LocalContext.current
+
+    var isLoading by remember { mutableStateOf(false)}
 
     val goalOptions = listOf("Health", "Education", "Career", "Habits", "Personal Growth")
 
@@ -140,14 +146,35 @@ fun SignUpScreen(modifier: Modifier = Modifier,navController: NavController) {
 
 
                 Button(
-                    onClick = { /* Register logic */ },
+
+                    onClick = {
+                        isLoading = true
+                        if (password != confirmPassword) {
+                            AppUtil.showToast(context, "Passwords do not match")
+                            return@Button
+                        }
+                        authViewModel.signup(email,name,password){basarili,errorMessage ->
+
+                            if(basarili){
+                                navController.navigate("home"){
+                                    popUpTo("kayit_ol") {inclusive = true}
+                                }
+
+                            }else{
+                                isLoading = false
+                                AppUtil.showToast(context,errorMessage?:"Something went wrong")
+
+                            }
+                        }
+                    },
+                    enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
                 ) {
-                    Text("Sign Up", fontSize = 16.sp)
+                    Text(text = if(isLoading) "Creating account" else "Signup", fontSize = 16.sp)
                 }
 
                 Text(
