@@ -24,11 +24,7 @@ val navigationItems = listOf(
         icon = Icons.Filled.Flag
 
     ),
-    NavigationItem(
-        title = "Add",
-        icon = Icons.Filled.AddCircle
 
-    ),
     NavigationItem(
         title = "Progress",
         icon = Icons.Filled.BarChart

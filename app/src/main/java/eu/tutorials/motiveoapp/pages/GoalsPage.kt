@@ -8,20 +8,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
@@ -29,25 +24,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.ListenerRegistration
 import eu.tutorials.motiveoapp.model.GoalItem
-import eu.tutorials.motiveoapp.model.addItemToGoals
-import eu.tutorials.motiveoapp.model.listenTodaysGoals
-
+import eu.tutorials.motiveoapp.viewmodel.addItemToGoals
+import eu.tutorials.motiveoapp.viewmodel.listenTodaysGoals
+import eu.tutorials.motiveoapp.viewmodel.toggleGoalCompletion
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalsPage(modifier: Modifier = Modifier) {
+    // Renk paleti
+    val primaryColor = Color(0xFF6C63FF)
+    val secondaryColor = Color(0xFF4D8AF0)
+    val background = Color(0xFFF8F9FF)
+    val cardBackground = Color(0xFFFFFFFF)
+    val textPrimary = Color(0xFF2D3748)
+    val textSecondary = Color(0xFF718096)
+
     var goals by remember { mutableStateOf<List<GoalItem>>(emptyList()) }
     var newGoalText by remember { mutableStateOf(TextFieldValue("")) }
     var listenerRegistration by remember { mutableStateOf<ListenerRegistration?>(null) }
+    val focusManager = LocalFocusManager.current
 
-    // Firestore'dan gerçek zamanlı dinleme
     LaunchedEffect(Unit) {
         listenerRegistration = listenTodaysGoals { fetchedGoals ->
             goals = fetchedGoals
         }
     }
 
-    // Dinleyici temizleme
     DisposableEffect(Unit) {
         onDispose {
             listenerRegistration?.remove()
@@ -57,112 +59,199 @@ fun GoalsPage(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F9FF))
-            .padding(16.dp)
+            .background(background)
+            .padding(24.dp)
     ) {
-        Text(
-            text = "🎯 My Daily Goals",
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color(0xFF0D47A1),
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
+        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            TextField(
-                value = newGoalText,
-                onValueChange = { newGoalText = it },
-                placeholder = { Text("Add new goal...") },
-                modifier = Modifier
-                    .weight(1f)
-                    .shadow(4.dp, RoundedCornerShape(12.dp)),
-                singleLine = true,
-                colors = TextFieldDefaults.textFieldColors(
-                    containerColor = Color.White,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+            Column {
+                Text(
+                    text = "Today's Goals",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = textPrimary,
+                    fontWeight = FontWeight.Bold
                 )
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Button(
-                onClick = {
-                    val trimmedText = newGoalText.text.trim()
-                    if (trimmedText.isNotEmpty()) {
-                        addItemToGoals(trimmedText)
-                        newGoalText = TextFieldValue("")
-                    }
-                },
-                modifier = Modifier.height(56.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Add")
+                Text(
+                    text = "${goals.count { it.isCompleted }}/${goals.size} completed",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textSecondary,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             }
+
+            Icon(
+                imageVector = Icons.Filled.Task,
+                contentDescription = "Goals",
+                tint = primaryColor,
+                modifier = Modifier.size(32.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(goals) { goal ->
-                GoalCard(
-                    goal = GoalItem(
-                        title = goal.title,
-                        isCompleted = false
-                    ),
-                    onToggle = {
-                        // İstersen buraya completion toggle için firestore update ekleyebilirsin
+        // Add Goal Input
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = newGoalText,
+                onValueChange = { newGoalText = it },
+                placeholder = { Text("What's your goal today?", color = textSecondary) },
+                modifier = Modifier
+                    .weight(1f)
+                    .shadow(4.dp, RoundedCornerShape(16.dp), clip = true),
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    containerColor = cardBackground,
+                    focusedBorderColor = primaryColor,
+                    unfocusedBorderColor = Color.Transparent
+                ),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.AddCircleOutline,
+                        contentDescription = "Add",
+                        tint = primaryColor
+                    )
+                }
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Button(
+                onClick = {
+                    if (newGoalText.text.trim().isNotEmpty()) {
+                        addItemToGoals(newGoalText.text.trim())
+                        newGoalText = TextFieldValue("")
+                        focusManager.clearFocus() // Klavyeyi kapatır
                     }
+                },
+                modifier = Modifier.height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = primaryColor,
+                    contentColor = Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 0.dp
                 )
+            ) {
+                Text("Add", fontSize = 16.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        // Goals List
+        if (goals.isEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Checklist,
+                    contentDescription = "Empty",
+                    tint = textSecondary.copy(alpha = 0.3f),
+                    modifier = Modifier.size(80.dp)
+                )
+                Text(
+                    text = "No goals yet",
+                    color = textSecondary,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+                Text(
+                    text = "Add your first goal to get started!",
+                    color = textSecondary.copy(alpha = 0.7f),
+                    fontSize = 14.sp
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(goals) { goal ->
+                    GoalCard(
+                        goal = goal,
+                        onToggle = { toggleGoalCompletion(it) },
+                        primaryColor = primaryColor,
+                        textPrimary = textPrimary,
+                        textSecondary = textSecondary
+                    )
+                }
             }
         }
     }
 }
 
-
 @Composable
-fun GoalCard(goal: GoalItem, modifier: Modifier = Modifier, onToggle: (GoalItem) -> Unit) {
+fun GoalCard(
+    goal: GoalItem,
+    modifier: Modifier = Modifier,
+    primaryColor: Color,
+    textPrimary: Color,
+    textSecondary: Color,
+    onToggle: (GoalItem) -> Unit
+) {
     val bgColor by animateColorAsState(
-        targetValue = if (goal.isCompleted) Color(0xFFD0F0ED) else Color.White
+        targetValue = if (goal.isCompleted) primaryColor.copy(alpha = 0.08f) else Color.White
     )
-    val iconTint by animateColorAsState(
-        targetValue = if (goal.isCompleted) Color(0xFF00796B) else Color.Gray
+    val iconColor by animateColorAsState(
+        targetValue = if (goal.isCompleted) primaryColor else textSecondary
     )
     val textColor by animateColorAsState(
-        targetValue = if (goal.isCompleted) Color(0xFF004D40) else Color(0xFF212121)
+        targetValue = if (goal.isCompleted) textPrimary.copy(alpha = 0.7f) else textPrimary
     )
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
+    Surface(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(16.dp))
-            .background(bgColor)
+            .shadow(8.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable { onToggle(goal) },
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        elevation = CardDefaults.cardElevation(8.dp)
+        color = bgColor
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 18.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = goal.title,
-                fontSize = 18.sp,
-                color = textColor,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = if (goal.isCompleted) FontWeight.Bold else FontWeight.Medium,
-                    textDecoration = if (goal.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (goal.isCompleted) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(24.dp)
                 )
-            )
-            Icon(
-                imageVector = if (goal.isCompleted) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                contentDescription = if (goal.isCompleted) "Completed" else "Not completed",
-                tint = iconTint,
-                modifier = Modifier.size(28.dp)
-            )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = goal.title,
+                    fontSize = 16.sp,
+                    color = textColor,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = if (goal.isCompleted) FontWeight.Medium else FontWeight.SemiBold,
+                        textDecoration = if (goal.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    )
+                )
+            }
+
+            if (goal.isCompleted) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = "Completed",
+                    tint = primaryColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

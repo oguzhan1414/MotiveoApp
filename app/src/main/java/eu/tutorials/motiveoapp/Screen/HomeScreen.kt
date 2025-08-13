@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import eu.tutorials.motiveoapp.model.navigationItems
-import eu.tutorials.motiveoapp.pages.AddPage
+
 import eu.tutorials.motiveoapp.pages.GoalsPage
 import eu.tutorials.motiveoapp.pages.HomePage
 import eu.tutorials.motiveoapp.pages.ProfilePage
@@ -71,8 +71,7 @@ fun ContentScreen(
     when (selectedIndex) {
         0 -> HomePage(modifier)
         1 -> GoalsPage(modifier)
-        2 -> AddPage(modifier)
-        3 -> ProgressPage(modifier)
-        4 -> ProfilePage(modifier, navController)  // navController burada verildi
+        2 -> ProgressPage(modifier)
+        3 -> ProfilePage(modifier, navController)  // navController burada verildi
     }
 }
